@@ -7,7 +7,7 @@ function readInputFile(filePath) {
 
 // Check if the date is in YYYY-MM-DD format
 function isValidDateFormat(dateString) {
-  const regex = /^\d{4}-\d{2}-\d{2}$/;
+  const regex = /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])$/;
   return regex.test(dateString);
 }
 
@@ -33,32 +33,34 @@ function filterValidOffers(checkinDate, offers) {
   const { checkinDatePlus5Days } = calculateValidDateRange(checkinDate);
   const validCategories = [1, 2, 4];
 
-  return offers
-    //get each offer with only one closest merchant
-    .map((offer) => ({
-      ...offer,
-      merchants: [findClosestMerchant(offer.merchants)],
-    }))
-    //filter the offers with valid categories and valid date range
-    .filter(
-      (offer) =>
-        validCategories.includes(offer.category) &&
-        new Date(offer.valid_to).getTime() >= checkinDatePlus5Days.getTime()
-    )
-    //sort the offers by distance
-    .sort((a, b) => a.merchants[0].distance - b.merchants[0].distance)
-    //get only two offers with different categories
-    .reduce((result, offer) => {
-      const isSameCategory = result.some(
-        (selectedOffer) => selectedOffer.category === offer.category
-      );
+  return (
+    offers
+      //get each offer with only one closest merchant
+      .map((offer) => ({
+        ...offer,
+        merchants: [findClosestMerchant(offer.merchants)],
+      }))
+      //filter the offers with valid categories and valid date range
+      .filter(
+        (offer) =>
+          validCategories.includes(offer.category) &&
+          new Date(offer.valid_to).getTime() >= checkinDatePlus5Days.getTime()
+      )
+      //sort the offers by distance
+      .sort((a, b) => a.merchants[0].distance - b.merchants[0].distance)
+      //get only two offers with different categories
+      .reduce((result, offer) => {
+        const isSameCategory = result.some(
+          (selectedOffer) => selectedOffer.category === offer.category
+        );
 
-      if (!isSameCategory && result.length < 2) {
-        result.push(offer);
-      }
+        if (!isSameCategory && result.length < 2) {
+          result.push(offer);
+        }
 
-      return result;
-    }, []);
+        return result;
+      }, [])
+  );
 }
 
 // Save filtered offers to output file
