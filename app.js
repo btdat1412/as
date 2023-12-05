@@ -19,8 +19,56 @@ function calculateValidDateRange(checkinDate) {
     checkinDatePlus5Days,
   };
 }
+//find closest merchant in each offer
+function findClosestMerchant(merchants) {
+  return merchants.reduce((minMerchant, currentMerchant) =>
+    currentMerchant.distance < minMerchant.distance
+      ? currentMerchant
+      : minMerchant
+  );
+}
 
-// Filter offers and save to output file function
+//handle filter valid offers
+function filterValidOffers(checkinDate, offers) {
+  const { checkinDatePlus5Days } = calculateValidDateRange(checkinDate);
+  const validCategories = [1, 2, 4];
+
+  return offers
+    //get each offer with only one closest merchant
+    .map((offer) => ({
+      ...offer,
+      merchants: [findClosestMerchant(offer.merchants)],
+    }))
+    //filter the offers with valid categories and valid date range
+    .filter(
+      (offer) =>
+        validCategories.includes(offer.category) &&
+        new Date(offer.valid_to).getTime() >= checkinDatePlus5Days.getTime()
+    )
+    //sort the offers by distance
+    .sort((a, b) => a.merchants[0].distance - b.merchants[0].distance)
+    //get only two offers with different categories
+    .reduce((result, offer) => {
+      const isSameCategory = result.some(
+        (selectedOffer) => selectedOffer.category === offer.category
+      );
+
+      if (!isSameCategory && result.length < 2) {
+        result.push(offer);
+      }
+
+      return result;
+    }, []);
+}
+
+// Save filtered offers to output file
+function saveFilteredOffers(outputFilePath, finalResult) {
+  const outputData = { offers: finalResult };
+  const outputJson = JSON.stringify(outputData, null, 2);
+  fs.writeFileSync(outputFilePath, outputJson);
+}
+
+// excecution function
 function filterAndSaveOffers(checkinDate, inputFilePath, outputFilePath) {
   const data = readInputFile(inputFilePath);
 
@@ -29,47 +77,10 @@ function filterAndSaveOffers(checkinDate, inputFilePath, outputFilePath) {
     process.exit(1);
   }
 
-  const filteredOffers = data.offers
-    .filter((offer) => {
-      //filter days
-      const { checkinDatePlus5Days } = calculateValidDateRange(checkinDate);
-
-      const validCategories = [1, 2, 4];
-
-      return (
-        validCategories.includes(offer.category) &&
-        validToDate.getTime() >= checkinDatePlus5Days.getTime()
-      );
-    })
-    .reduce((acc, offer) => {
-      const existingOffer = acc.find((o) => o.category === offer.category);
-
-      if (!existingOffer) {
-        // Add the offer if there's no existing offer in the category
-        return [...acc, offer];
-      }
-
-      // Check if the current offer's merchant is closer
-      if (offer.merchants[0].distance < existingOffer.merchants[0].distance) {
-        // Replace the existing offer with the current offer
-        return [offer];
-        
-      } else if (
-        offer.merchants[0].distance === existingOffer.merchants[0].distance
-      ) {
-        // If distances are equal, keep both offers
-        return [...acc, offer];
-      }
-
-      return acc;
-    }, []);
-
+  const filteredOffers = filterValidOffers(checkinDate, data.offers);
   const finalResult = filteredOffers.slice(0, 2);
 
-  const outputData = { offers: finalResult };
-  const outputJson = JSON.stringify(outputData, null, 2);
-  fs.writeFileSync(outputFilePath, outputJson);
-
+  saveFilteredOffers(outputFilePath, finalResult);
   console.log("Filtered offers saved to", outputFilePath);
 }
 

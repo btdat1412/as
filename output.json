@@ -24,11 +24,6 @@
           "id": 3,
           "name": "Offer3 Merchant1",
           "distance": 0.8
-        },
-        {
-          "id": 4,
-          "name": "Offer3 Merchant2",
-          "distance": 0.9
         }
       ],
       "valid_to": "2020-01-01"
