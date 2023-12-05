@@ -1,7 +1,9 @@
 # Ascenda Take Home Assignment Round
-Examinee: 
-Name: Bùi Tiến Đạt 
-Email: btdat1412@gmail.com 
+
+## Examinee Information
+
+- **Name:** Bùi Tiến Đạt
+- **Email:** [btdat1412@gmail.com](mailto:btdat1412@gmail.com)
 
 ## Setup
 
